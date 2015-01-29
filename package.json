@@ -1,0 +1,21 @@
+{
+  "name": "PeerChat",
+  "version": "0.0.1",
+  "description": "Peer Chat: Video Chatting Application",
+  "main": "index.html",
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/webrtc/codelab"
+  },
+  "keywords": [
+    "socket.io",
+    "video chat"
+  ],
+  "author": "https://github.com/Hironate",
+  "license": "MIT",
+  "dependencies": {
+    "node-static": "~0.7.1",
+    "socket.io": "~0.9.16",
+    "express": "~3.4.0"
+  }
+}

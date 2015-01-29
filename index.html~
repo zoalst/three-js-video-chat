@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="Video chat using socket.io" content="">
+  <meta name="author" content="Hiren Kavad">
+  
+  <script src="//api.turnservers.com/api.js?key=IhmJXmMHzKKAKqgjgCrGyecGffeGKzRF"></script>
+  
+  <!-- Obtain FREE TURN SERVER AND API KEY From Turnservers.com -->
+
+  <title>Three js Video Chat</title>
+
+  
+  <!-- Just for debugging purposes. Don't actually copy this line! -->
+  <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+      <![endif]-->
+    </head>
+
+    <body>
+      <div>
+       <input type="button" id="startButton" class="btn btn-success" value="Join"/>
+     </div>
+     <video id='remoteVideo' autoplay width="160" height="120" style="visibility: hidden; float:left;" class="remote"></video>
+     <canvas id="remoteVideoImage" width="160" height="120" style="visibility: hidden; float:left;" class="remote"></canvas>
+     <video id='localVideo' autoplay width="160" height="120" style="visibility: hidden; float:left;" muted ></video>
+     <canvas id="localVideoImage" width="160" height="120" style="visibility: hidden; float:left;"></canvas>
+
+
+
+     <!-- Placed at the end of the document so the pages load faster -->
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+     <!-- Application Specific Javascripts -->
+     <script src='/socket.io/socket.io.js'></script>
+     <script src='js/main.js'></script>
+
+     <!-- Three js -->
+     <script src="js/Three.js"></script>
+     <script src="js/Detector.js"></script>
+     <script src="js/Stats.js"></script>
+     <script src="js/OrbitControls.js"></script>
+     <script src="js/THREEx.KeyboardState.js"></script>
+     <script src="js/THREEx.FullScreen.js"></script>
+     <script src="js/THREEx.WindowResize.js"></script>
+     <div id="ThreeJS" style="position: absolute; bottom:30px; top:30px"></div>
+     <script src='js/chat3d.js'></script>
+
+   </body>
+   </html>

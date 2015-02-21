@@ -11,8 +11,14 @@ var container, scene, camera, renderer, controls, stats;
 var keyboard = new THREEx.KeyboardState();
 
 // custom global variables
-var video, videoImage, videoImageContext, videoTexture;
-var rvideo, rvideoImage, rvideoImageContext, rvideoTexture;
+//video
+var video, videoImage, videoImageContext, videoTexture, movieScreen;
+var rvideo, rvideoImage, rvideoImageContext, rvideoTexture, rmovieScreen;
+//gui
+var gui, parameters;
+var rotateLocal = false;
+var rotateRemote = false;
+
 
 init();
 animate();
@@ -59,12 +65,84 @@ function init()
 	var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
 	var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
 	var floor = new THREE.Mesh(floorGeometry, floorMaterial);
-	floor.position.y = -0.5;
+	floor.position.y = -25;
 	floor.rotation.x = Math.PI / 2;
 	scene.add(floor);
 	// SKYBOX/FOG
 	scene.fog = new THREE.FogExp2( 0x9999ff, 0.00025 );
+	//SPHERES
+	// radius, segments along width, segments along height
+	var sphereGeom =  new THREE.SphereGeometry( 75, 32, 16 );
+		// translucent blue sphere with additive blending and phong shading
+	// added ambient light and color for better results
+	var ambientLight = new THREE.AmbientLight(0x444444);
+	scene.add(ambientLight);
 	
+	var darkMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00, ambient: 0xff00ff, transparent: true, blending: THREE.AdditiveBlending } );
+	var sphereLocal = new THREE.Mesh( sphereGeom.clone(), darkMaterial );
+	sphereLocal.position.set(100, 50, 0);
+	sphereLocal.visible = false;
+	scene.add( sphereLocal );
+
+	var darkMaterial3 = new THREE.MeshPhongMaterial( { color: 0x0000ff, ambient: 0xffff00, transparent: true, blending: THREE.AdditiveBlending } );
+	var sphereRemote = new THREE.Mesh( sphereGeom.clone(), darkMaterial3 );
+	sphereRemote.position.set(-100, 50, 0);
+	sphereRemote.visible = false;
+	scene.add( sphereRemote );
+
+
+	//gui
+	gui = new dat.GUI();
+	parameters = 
+	{
+		localColor: "#00ff00", // color (change "#" to "0x")
+		localAmbient: "#ff00ff", 
+		remoteColor: "#0000ff", // color (change "#" to "0x")
+		remoteAmbient: "#ffff00", 
+		localSpin: false, 
+		remoteSpin: false, 
+		visible: true,
+		localSphereVisible: false,
+		remoteSphereVisible: false
+	};
+	var sphereLocalColor = gui.addColor( parameters, 'localColor' ).name('Your color').listen();
+	sphereLocalColor.onChange(function(value) // onFinishChange
+	{   sphereLocal.material.color.setHex( value.replace("#", "0x") );   });
+
+	var sphereLocalAmbient = gui.addColor( parameters, 'localAmbient' ).name('Your ambient').listen();
+	sphereLocalAmbient.onChange(function(value) // onFinishChange
+	{   sphereLocal.material.ambient.setHex( value.replace("#", "0x") );   });
+
+	var sphereRemoteColor = gui.addColor( parameters, 'remoteColor' ).name('Their color').listen();
+	sphereRemoteColor.onChange(function(value) // onFinishChange
+	{   sphereRemote.material.color.setHex( value.replace("#", "0x") );   });
+
+	var sphereRemoteAmbient = gui.addColor( parameters, 'remoteAmbient' ).name('Their ambient').listen();
+	sphereRemoteAmbient.onChange(function(value) // onFinishChange
+	{   sphereRemote.material.ambient.setHex( value.replace("#", "0x") );   });
+
+	var floorVisible = gui.add( parameters, 'visible' ).name('Floor visible?').listen();
+	floorVisible.onChange(function(value) 
+	{   floor.visible = value;  	});
+
+	var localSphereVisible = gui.add( parameters, 'localSphereVisible' ).name('Your sphere').listen();
+	localSphereVisible.onChange(function(value) 
+	{   sphereLocal.visible = value;  	});
+
+	var remoteSphereVisible = gui.add( parameters, 'remoteSphereVisible' ).name('Their sphere').listen();
+	remoteSphereVisible.onChange(function(value) 
+	{   sphereRemote.visible = value;  	});
+
+	var localVideoSpin = gui.add( parameters, 'localSpin' ).name('You spin?').listen();
+	localVideoSpin.onChange(function(value) 
+	{   rotateLocal = !rotateLocal;  	});
+		
+	var remoteVideoSpin = gui.add( parameters, 'remoteSpin' ).name('They spin?').listen();
+	remoteVideoSpin.onChange(function(value) 
+	{   rotateRemote = !rotateRemote;  	});
+
+	gui.open();
+
 	///////////
 	// VIDEO //
 	///////////
@@ -86,7 +164,7 @@ function init()
 	// the geometry on which the movie will be displayed;
 	// 		movie image will be scaled to fit these dimensions.
 	var movieGeometry = new THREE.PlaneGeometry( 100, 100, 1, 1 );
-	var movieScreen = new THREE.Mesh( movieGeometry, movieMaterial );
+	movieScreen = new THREE.Mesh( movieGeometry, movieMaterial );
 	movieScreen.position.set(100,50,0);
 	movieScreen.rotation.y = -Math.PI / 4;
 	scene.add(movieScreen);
@@ -112,11 +190,47 @@ function init()
 	// the geometry on which the movie will be displayed;
 	// 		movie image will be scaled to fit these dimensions.
 	var rmovieGeometry = new THREE.PlaneGeometry( 100, 100, 1, 1 );
-	var rmovieScreen = new THREE.Mesh( rmovieGeometry, rmovieMaterial );
+	rmovieScreen = new THREE.Mesh( rmovieGeometry, rmovieMaterial );
 	rmovieScreen.position.set(-100,50,0);
 	rmovieScreen.rotation.y = Math.PI / 4;
 	scene.add(rmovieScreen);
 	
+		////////////
+	// bubble //
+	////////////
+	/*
+	this.refractSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+	scene.add( refractSphereCamera );
+
+	var fShader = THREE.FresnelShader;
+	
+	var fresnelUniforms = 
+	{
+		"mRefractionRatio": { type: "f", value: 1.02 },
+		"mFresnelBias": 	{ type: "f", value: 0.1 },
+		"mFresnelPower": 	{ type: "f", value: 2.0 },
+		"mFresnelScale": 	{ type: "f", value: 1.0 },
+		"tCube": 			{ type: "t", value: refractSphereCamera.renderTarget } //  textureCube }
+	};
+	
+	// create custom material for the shader
+	var customMaterial = new THREE.ShaderMaterial( 
+	{
+	    uniforms: 		fresnelUniforms,
+		vertexShader:   fShader.vertexShader,
+		fragmentShader: fShader.fragmentShader
+	}   );
+	
+	var sphereGeometry = new THREE.SphereGeometry( 50, 6, 3 );
+	this.sphere = new THREE.Mesh( sphereGeometry, customMaterial );
+	sphere.position.set(0, 75, 50);
+	//sphere.rotation.x = -Math.PI / 2;
+	scene.add(sphere);
+	
+	refractSphereCamera.position = sphere.position;*/
+
+
+
 }
 
 function animate() 
@@ -138,12 +252,26 @@ function update()
 
 function render() 
 {	
+	//Bubble
+	/*sphere.visible = false;
+	refractSphereCamera.updateCubeMap( renderer, scene );
+	sphere.visible = true;*/
+  //	sphere.rotation.y += 0.002*Math.PI / 2;
+	//spin local & remote screens
+	if( rotateLocal ){
+  	movieScreen.rotation.y += 0.002*Math.PI / 2;
+	}
+	if( rotateRemote ){
+  	rmovieScreen.rotation.y += 0.002*Math.PI / 2;
+	}
+	//update local video
 	if ( video.readyState === video.HAVE_ENOUGH_DATA ) 
 	{
 		videoImageContext.drawImage( video, 0, 0, videoImage.width, videoImage.height );
 		if ( videoTexture ) 
 			videoTexture.needsUpdate = true;
 	}
+	//update remote video
 	if ( rvideo.readyState === rvideo.HAVE_ENOUGH_DATA ) 
 	{
 		rvideoImageContext.drawImage( rvideo, 0, 0, rvideoImage.width, rvideoImage.height );

@@ -36,4 +36,16 @@ io.sockets.on('connection', function(socket) {
 
     });
 
+    socket.on('send spin', function (data) {
+        socket.broadcast.emit('spin', data);
+    });
+    socket.on('send sphere', function (data) {
+        socket.broadcast.emit('sphere', data);
+    });
+    socket.on('send sphere color', function (data) {
+        socket.broadcast.emit('sphere color', data);
+    });
+    socket.on('send sphere ambient', function (data) {
+        socket.broadcast.emit('sphere ambient', data);
+    });
 });

@@ -1,4 +1,5 @@
 /*
+	Based on:
 	Three.js "tutorials by example"
 	Author: Lee Stemkoski
 	Date: July 2013 (three.js v59dev)
@@ -14,11 +15,14 @@ var keyboard = new THREEx.KeyboardState();
 //video
 var video, videoImage, videoImageContext, videoTexture, movieScreen;
 var rvideo, rvideoImage, rvideoImageContext, rvideoTexture, rmovieScreen;
-//gui
+
 var gui, parameters;
+
 var rotateLocal = false;
 var rotateRemote = false;
 
+//socket to get options from other user
+var socket = io.connect();
 
 init();
 animate();
@@ -84,7 +88,8 @@ function init()
 	sphereLocal.visible = false;
 	scene.add( sphereLocal );
 
-	var darkMaterial3 = new THREE.MeshPhongMaterial( { color: 0x0000ff, ambient: 0xffff00, transparent: true, blending: THREE.AdditiveBlending } );
+	var darkMaterial3 = new THREE.MeshPhongMaterial( { color: 0x00ff00, ambient: 0xff00ff, transparent: true, blending: THREE.AdditiveBlending } );
+	//var darkMaterial3 = new THREE.MeshPhongMaterial( { color: 0x0000ff, ambient: 0xffff00, transparent: true, blending: THREE.AdditiveBlending } );
 	var sphereRemote = new THREE.Mesh( sphereGeom.clone(), darkMaterial3 );
 	sphereRemote.position.set(-100, 50, 0);
 	sphereRemote.visible = false;
@@ -97,50 +102,63 @@ function init()
 	{
 		localColor: "#00ff00", // color (change "#" to "0x")
 		localAmbient: "#ff00ff", 
-		remoteColor: "#0000ff", // color (change "#" to "0x")
-		remoteAmbient: "#ffff00", 
+		//remoteColor: "#0000ff", // color (change "#" to "0x")
+		//remoteAmbient: "#ffff00", 
 		localSpin: false, 
-		remoteSpin: false, 
+		//remoteSpin: false, 
 		visible: true,
-		localSphereVisible: false,
-		remoteSphereVisible: false
+		localSphereVisible: false//,
+		//remoteSphereVisible: false
 	};
 	var sphereLocalColor = gui.addColor( parameters, 'localColor' ).name('Your color').listen();
 	sphereLocalColor.onChange(function(value) // onFinishChange
-	{   sphereLocal.material.color.setHex( value.replace("#", "0x") );   });
+	{   
+		sphereLocal.material.color.setHex( value.replace("#", "0x") );
+		socket.emit('send sphere color', JSON.stringify({'remoteSphereColor': value}))   
+	});
 
 	var sphereLocalAmbient = gui.addColor( parameters, 'localAmbient' ).name('Your ambient').listen();
 	sphereLocalAmbient.onChange(function(value) // onFinishChange
-	{   sphereLocal.material.ambient.setHex( value.replace("#", "0x") );   });
+	{   
+		sphereLocal.material.ambient.setHex( value.replace("#", "0x") );   
+		socket.emit('send sphere ambient', JSON.stringify({'remoteSphereAmbient': value}))
+	});
 
-	var sphereRemoteColor = gui.addColor( parameters, 'remoteColor' ).name('Their color').listen();
+	/*var sphereRemoteColor = gui.addColor( parameters, 'remoteColor' ).name('Their color').listen();
 	sphereRemoteColor.onChange(function(value) // onFinishChange
 	{   sphereRemote.material.color.setHex( value.replace("#", "0x") );   });
 
 	var sphereRemoteAmbient = gui.addColor( parameters, 'remoteAmbient' ).name('Their ambient').listen();
 	sphereRemoteAmbient.onChange(function(value) // onFinishChange
 	{   sphereRemote.material.ambient.setHex( value.replace("#", "0x") );   });
-
+*/
 	var floorVisible = gui.add( parameters, 'visible' ).name('Floor visible?').listen();
 	floorVisible.onChange(function(value) 
 	{   floor.visible = value;  	});
 
 	var localSphereVisible = gui.add( parameters, 'localSphereVisible' ).name('Your sphere').listen();
 	localSphereVisible.onChange(function(value) 
-	{   sphereLocal.visible = value;  	});
+	{   
+			sphereLocal.visible = value;  	
+  		socket.emit('send sphere', JSON.stringify({'remoteSphereVisible': value}))
+	});
 
-	var remoteSphereVisible = gui.add( parameters, 'remoteSphereVisible' ).name('Their sphere').listen();
+	/*var remoteSphereVisible = gui.add( parameters, 'remoteSphereVisible' ).name('Their sphere').listen();
 	remoteSphereVisible.onChange(function(value) 
 	{   sphereRemote.visible = value;  	});
-
+*/
 	var localVideoSpin = gui.add( parameters, 'localSpin' ).name('You spin?').listen();
 	localVideoSpin.onChange(function(value) 
-	{   rotateLocal = !rotateLocal;  	});
+	{   
+			rotateLocal = !rotateLocal;  	
+			//send as remoteSpin because local here is remote there.
+			socket.emit('send spin', JSON.stringify({'remoteSpin': rotateLocal}))
+	});
 		
-	var remoteVideoSpin = gui.add( parameters, 'remoteSpin' ).name('They spin?').listen();
+	/*var remoteVideoSpin = gui.add( parameters, 'remoteSpin' ).name('They spin?').listen();
 	remoteVideoSpin.onChange(function(value) 
 	{   rotateRemote = !rotateRemote;  	});
-
+*/
 	gui.open();
 
 	///////////
@@ -221,14 +239,30 @@ function init()
 		fragmentShader: fShader.fragmentShader
 	}   );
 	
-	var sphereGeometry = new THREE.SphereGeometry( 50, 6, 3 );
+	var sphereGeometry = new THREE.SphereGeometry( 70, 6, 3 );
 	this.sphere = new THREE.Mesh( sphereGeometry, customMaterial );
-	sphere.position.set(0, 75, 50);
+	sphere.position.set(0, 75, -70);
 	//sphere.rotation.x = -Math.PI / 2;
 	scene.add(sphere);
 	
 	refractSphereCamera.position = sphere.position;*/
 
+	  ///////////
+	 //SOCKETS//
+  ///////////
+
+  socket.on('spin', function(data) {
+  	rotateRemote = JSON.parse(data).remoteSpin;
+  });
+  socket.on('sphere', function(data) {
+  	sphereRemote.visible = JSON.parse(data).remoteSphereVisible;
+  });
+  socket.on('sphere color', function(data) {
+  	sphereRemote.material.color.setHex( JSON.parse(data).remoteSphereColor.replace("#", "0x") );   
+  });
+  socket.on('sphere ambient', function(data) {
+  	sphereRemote.material.ambient.setHex( JSON.parse(data).remoteSphereAmbient.replace("#", "0x") );   
+  });
 
 
 }

@@ -3,6 +3,7 @@
 This is a simple example of rendering a local and remote video stream in a three dimensional environment using WebRTC, Node.js, Socket.io and Three.js.
 This example is put together using Hiren Kavad's PeerChat and Lee Stemkoski's Three.js Webcam-Texture example. PeerChat has been modified to also work with Mozilla Firefox
 
+![ScreenShot](/images/screenshot01.png)
 
 ## If you want to run on your server
 
